@@ -8,6 +8,6 @@ protein AND BUN
 protein and creatinine
 protein and GLOMERULAR FILTRATION RATE
 ginger AND irritable bowel syndrome
-#ginger AND IBS-D
+ginger AND IBS-D
 ginger AND CKD
 ginger AND chronic kidney disease

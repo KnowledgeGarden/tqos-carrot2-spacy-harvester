@@ -70,7 +70,10 @@ public class DocumentThread {
 			}
 		}
 		
-		
+		/**
+		 * We get back a pmid doc to now process to spaCy
+		 * @param doc
+		 */
 		void processDoc(JSONObject doc) {
 			environment.logDebug("DocThread\n"+doc);
 /*			IDocument d = new ConcordanceDocument(environment, doc);
@@ -83,7 +86,6 @@ public class DocumentThread {
 			IResult r  = documentDatabase.put(docId, pmid, pmcid, url, label, d.getData());
 			es.addDoc(d);
 			ocean.addDoc(d); */
-			environment.logDebug("DocThread+ "+r.getErrorString());
 		}
 	}
 }

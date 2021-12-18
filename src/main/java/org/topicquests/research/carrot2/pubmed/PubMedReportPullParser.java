@@ -6,7 +6,9 @@
 package org.topicquests.research.carrot2.pubmed;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.topicquests.research.carrot2.Environment;
 import org.topicquests.support.ResultPojo;
@@ -198,9 +200,9 @@ public class PubMedReportPullParser {
 	                	//TODO deal with abstracts
 	                	String foo = cleanText(text);
 	                	if (label == null)
-	                		theDocument.addDocAbstract(foo); 
+	                		addAbstract(theDocument, foo); 
 	                	else 
-	                		theDocument.addDocAbstract(label+". "+foo);
+	                		addAbstract(theDocument, label+". "+foo);
 	                } else if (temp.equalsIgnoreCase("Language")) {
 	                	theDocument.put("lang", text);
 	                } else if (temp.equalsIgnoreCase("MedlineDate")) {
@@ -275,16 +277,15 @@ public class PubMedReportPullParser {
 	                		pt += " | "+text;
 	                	theDocument.getPublication().setPublicationType(pt);*/
 	                } else if (temp.equalsIgnoreCase("NameOfSubstance")) {
-	                	//TODO deal with substances
-	                	theDocument.addTag(text);
-	                	theDocument.addSubstance(text);
+	                	addTag(theDocument, text);
+	                	addSubstance(theDocument, text);
 	                } else if (temp.equalsIgnoreCase("DescriptorName")) {
-	                	theDocument.addTag(text);
+	                	addTag(theDocument, text);
 	                } else if (temp.equalsIgnoreCase("QualifierName")) {
-	                	theDocument.addTag(text);
+	                	addTag(theDocument, text);
 	                } else if (temp.equalsIgnoreCase("Keyword")) {
 	                	environment.logDebug("PMRPP.addTag "+text);
-	                	theDocument.addTag(text);
+	                	addTag(theDocument, text);
 	                } else if(temp.equalsIgnoreCase("CommentsCorrections")) {
 	                	isRefType = false;
 	                } else if(temp.equalsIgnoreCase("LastName")) { //TODO
@@ -338,6 +339,25 @@ public class PubMedReportPullParser {
 	      		environment.logError(e.getMessage(), e);
 	      		result.addErrorString(e.getMessage());
 	      } 		
+	}
+	
+	void addAbstract(JSONObject doc, String text) {
+		List<String> l = (List<String>) doc.get("abstract");
+		if (l == null) l = new ArrayList<String>();
+		l.add(text);
+		doc.put("abstract", l);
+	}
+	void addTag(JSONObject doc, String tag) {
+		List<String> l = (List<String>) doc.get("tags");
+		if (l == null) l = new ArrayList<String>();
+		l.add(tag);
+		doc.put("tags", l);
+	}
+	void addSubstance(JSONObject doc, String text) {
+		List<String> l = (List<String>) doc.get("substances");
+		if (l == null) l = new ArrayList<String>();
+		l.add(text);
+		doc.put("substances", l);
 	}
 	
 	String trimAffiliation(String affiliation) {
