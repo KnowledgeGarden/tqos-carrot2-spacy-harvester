@@ -38,6 +38,10 @@ public class ParserThread {
 		environment.logDebug("ParserThread");
 	}
 	
+	/**
+	 * From Carrot2 search by way of {@code Environment}
+	 * @param xml
+	 */
 	public void addDoc(String xml) {
 		environment.logDebug("PT.add");
 		synchronized(docs) {
@@ -91,6 +95,8 @@ public class ParserThread {
 			hasBeenRunning = true;
 			IResult r = parser.parseXML(xml);
 			JSONObject j = (JSONObject)r.getResultObject();
+			//add raw XML to j
+			j.put("raw", xml);
 			String pmid = j.getAsString("pmid");
 			environment.logDebug("PT+");
 			environment.getAccountant().haveSeen(pmid);

@@ -4,3 +4,5 @@ TODO
 	did Modify ParserThread for new results from pullparser
 	Rewrite VagabondThread to feed Carrot2
 	Add spaCy processing to DocumentThread
+	did In ParserThread, add raw XML abstract to the JSONObject which then gets passed
+		to DocumentThread
