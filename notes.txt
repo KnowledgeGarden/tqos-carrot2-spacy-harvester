@@ -1,0 +1,5 @@
+TODO
+	Modify PubMedReportPullParser to just grab title and abstracts
+	Modify DocumentThread to gather JSON from spaCy then persist as gzip
+	Modify ParserThread for new results from pullparser
+	Rewrite VagabondThread to feed Carrot2
