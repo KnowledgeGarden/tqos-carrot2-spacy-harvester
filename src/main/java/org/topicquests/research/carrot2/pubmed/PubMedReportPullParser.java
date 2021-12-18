@@ -15,6 +15,8 @@ import org.topicquests.support.util.TextFileHandler;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import net.minidev.json.JSONObject;
+
 /**
  * @author park
  *
@@ -100,7 +102,7 @@ public class PubMedReportPullParser {
 	         xpp.setInput(in);
 	         
 	        //the working document
-	         JSONDocumentObject theDocument = null;
+	         JSONObject theDocument = null;
 	         String temp = null;
 	         String text = null;
 	         String label = null;
@@ -175,7 +177,7 @@ public class PubMedReportPullParser {
 	                	refType = (String)props.get("RefType");
 	                	isRefType = true;
 	                } else if (temp.equalsIgnoreCase("PubmedArticle")) {
-	                	theDocument = new JSONDocumentObject("SystemUser");
+	                	theDocument = new JSONObject();
 	                	result.setResultObject(theDocument);
 	                	environment.logDebug("PMRPP.start");
 	                } else if (temp.equalsIgnoreCase("PubmedArticleSet")) {
@@ -191,35 +193,21 @@ public class PubMedReportPullParser {
 	            } else if(eventType == XmlPullParser.END_TAG) {
 	                System.out.println("PM End tag "+temp+" // "+text);
 	                if (temp.equalsIgnoreCase("ArticleTitle")) {
-	                	theDocument.setTitle(text);
+	                	theDocument.put("title", text);
 	                } else if(temp.equalsIgnoreCase("AbstractText")) {
+	                	//TODO deal with abstracts
 	                	String foo = cleanText(text);
 	                	if (label == null)
 	                		theDocument.addDocAbstract(foo); 
 	                	else 
 	                		theDocument.addDocAbstract(label+". "+foo);
 	                } else if (temp.equalsIgnoreCase("Language")) {
-	                	theDocument.setLanguage(text);
+	                	theDocument.put("lang", text);
 	                } else if (temp.equalsIgnoreCase("MedlineDate")) {
 	                	pubDate = text;
 	                } else if (temp.equalsIgnoreCase("Journal")) {
 	                	isJournal = false;
-	                	IPublication p = new PublicationPojo();
-	                	p.setPages(pages);
-	                	p.setMonth(pubMonth);
-	                	p.setISBN(pubISSN);
-	                	p.setPublicationYear(pubYear);
-	                	p.setPubicationVolume(pubVolume);
-	                	if (pubDate != null)
-	                		p.setPublicationDate(pubDate);
-	                	p.setPublicationName(pubName);
-	                	if (pubTitle != null)
-	                		p.setTitle(pubTitle);
-	                	p.setISOAbbreviation(pubIsoAbbrev);
-	                	theDocument.setPublication(p);
-	                	pages=null; pubMonth=null; pubYear=null;
-	                	pubVolume=null; pubName=null; pubTitle=null;
-	                	pubDate = null; pubIsoAbbrev = null;
+	                	
 	                } else if (temp.equalsIgnoreCase("ISOAbbreviation")) {
 	                	if (isJournal)
 	                		pubIsoAbbrev = text;
@@ -231,13 +219,13 @@ public class PubMedReportPullParser {
 	                	if (isJournal)
 	                		pubVolume = text;
 	                } else if (temp.equalsIgnoreCase("MedlinePgn")) {
-	                	theDocument.getPublication().setPages(text);
+	                	//theDocument.getPublication().setPages(text);
 	                } else if (temp.equalsIgnoreCase("Year")) {
 	                	if (isJournal)
 	                		pubYear = text;
 	                } else if (temp.equalsIgnoreCase("PMID")) {
 	                	if (!isRefType) {
-	                		theDocument.setPMID(text);
+	                		theDocument.put("pmid", text);
 	                		//have we seen this before?
 	                		//if (pubMedEnvironment.pmidIsVisited(text)) {
 	                		//	result.setResultObjectA(PubMedEnvironment.PMID_IS_VISITED);
@@ -253,7 +241,7 @@ public class PubMedReportPullParser {
 	                	} //else if (refType.equals("Cites"))
 	                	//	theDocument.addCitation(text);
 		            } else if (temp.equalsIgnoreCase("ArticleId")) {
-		            	theDocument.addCitation(articleIdType, text); 
+		            	//theDocument.addCitation(articleIdType, text); 
 
 	                } else if (temp.equalsIgnoreCase("Month")) {
 	                	if (isJournal)
@@ -262,7 +250,7 @@ public class PubMedReportPullParser {
 	                	if (isJournal)
 	                		pubTitle =text ;
 	                } else if (temp.equalsIgnoreCase("Author")) {
-	                	environment.logDebug("PMRPP.author "+isValid); //+"\n"+theDocument);
+	                	/*environment.logDebug("PMRPP.author "+isValid); //+"\n"+theDocument);
 	                	if (isValid) {
 	                		IAuthor a = new AuthorPojo();
 	                		a.setAuthorLastName(lastName);
@@ -278,15 +266,16 @@ public class PubMedReportPullParser {
 	                	lastName = null;
 	                	firstName = null;
 	                	initials = null;
-	                	affiliation = null;
+	                	affiliation = null;*/
 	                } else if (temp.equalsIgnoreCase("PublicationType")) {
-	                	String pt = theDocument.getPublication().getPublicationType();
+	                	/*String pt = theDocument.getPublication().getPublicationType();
 	                	if (pt == null)
 	                		pt = text;
 	                	else
 	                		pt += " | "+text;
-	                	theDocument.getPublication().setPublicationType(pt);
+	                	theDocument.getPublication().setPublicationType(pt);*/
 	                } else if (temp.equalsIgnoreCase("NameOfSubstance")) {
+	                	//TODO deal with substances
 	                	theDocument.addTag(text);
 	                	theDocument.addSubstance(text);
 	                } else if (temp.equalsIgnoreCase("DescriptorName")) {
@@ -336,7 +325,7 @@ public class PubMedReportPullParser {
 	                	country = null;
 	                	isGrant = false;*/
 	                } else if (temp.equalsIgnoreCase("CopyrightInformation")) {
-	                	theDocument.setCopyright(text);
+	                	//theDocument.setCopyright(text);
 	                }
 	            } else if(eventType == XmlPullParser.TEXT) {
 	                text = xpp.getText().trim();
@@ -374,94 +363,7 @@ public class PubMedReportPullParser {
 			return false;
 		return true;
 	}
-	/**
-	 * @see http://www.nlm.nih.gov/mesh/pubtypes.html
-	 * We don't model every one of them
-	 * @param text
-	 * @return
-	 */
-	String makePublicationType(String text) {
-		String result = "JournalArticleType"; //default
-		if (text.equalsIgnoreCase("Journal Article"))
-			result = "JournalArticleType";
-		else if (text.equalsIgnoreCase("Research Support, N.I.H., Extramural"))
-			result = "RshSupExtramuralType";
-		else if (text.equalsIgnoreCase("Research Support, N.I.H., Intramural"))
-			result = "RshSupIntramuralType";
-		else if (text.equalsIgnoreCase("Research Support, Non-U.S. Gov't"))
-			result = "RshSupNonGovType";
-		else if (text.equalsIgnoreCase("Research Support, U.S. Gov't, Non-P.H.S."))
-			result = "RshSupGovNonPHSType";
-		else if (text.equalsIgnoreCase("Research Support, U.S. Gov't, P.H.S."))
-			result = "RshSupGovPHSType";
-		else if (text.equalsIgnoreCase("Research Support, U.S. Government"))
-			result = "RshSupGovType";
-		else if (text.equalsIgnoreCase("Retracted Publication"))
-			result = "RetractedPubType";
-		else if (text.equalsIgnoreCase("Published Erratum"))
-			result = "PublishedErratumType";
-		else if (text.equalsIgnoreCase("Review"))
-			result = "ReviewType";
-		else if (text.equalsIgnoreCase("Scientific Integrity Review"))
-			result = "SciIntegrityReviewType";
-		else if (text.equalsIgnoreCase("Statistics"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Technical Report"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Practice Guideline"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Pharmacopoeias"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Personal Narratives"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Observational Study"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Multicenter Study"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Monograph"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Duplicate Publication"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Editorial"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Comparative Study"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Comment"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Clinical Trial"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Clinical Trial, Phase I"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Clinical Trial, Phase II"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Clinical Trial, Phase III"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Clinical Trial, Phase IV"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Randomized Controlled Trial"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Pragmatic Clinical Trial"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("English Abstract"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Meta-Analysis"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("News"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Letter"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("Newspaper Article"))
-			result = ""; //TODO
-		else if (text.equalsIgnoreCase("Case Reports"))
-			result = ""; //TODO
-		else if (text.equalsIgnoreCase("Interview"))
-			result = ""; //TODO
-		else if (text.equalsIgnoreCase("Historical Article"))
-			result = "";//TODO
-		else if (text.equalsIgnoreCase("In Vitro"))
-			result = "";//TODO
-		return result;
-	}
+
 	/**
 	 * </p>@see http://www.ncbi.nlm.nih.gov/pubmed/23329350 for
 	 * an abstract that has wild characters '0''9'</p>

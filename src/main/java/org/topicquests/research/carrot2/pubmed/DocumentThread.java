@@ -8,14 +8,11 @@ package org.topicquests.research.carrot2.pubmed;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.topicquests.asr.general.document.api.IDocumentClient;
-import org.topicquests.hyperbrane.ConcordanceDocument;
-import org.topicquests.hyperbrane.api.IDocument;
 import org.topicquests.research.carrot2.Environment;
-import org.topicquests.research.carrot2.nlp.ElasticSearch;
-import org.topicquests.research.carrot2.ocean.OceanThread;
 import org.topicquests.research.carrot2.pubmed.ParserThread.Worker;
 import org.topicquests.support.api.IResult;
+
+import net.minidev.json.JSONObject;
 
 /**
  * @author jackpark
@@ -23,10 +20,7 @@ import org.topicquests.support.api.IResult;
  */
 public class DocumentThread {
 	private Environment environment;
-	private IDocumentClient documentDatabase;
-	private ElasticSearch es;
-	private OceanThread ocean;
-	private List<JSONDocumentObject> docs;
+	private List<JSONObject> docs;
 	private boolean isRunning = true;
 	private Worker worker;
 	/**
@@ -34,16 +28,13 @@ public class DocumentThread {
 	 */
 	public DocumentThread(Environment env) {
 		environment = env;
-		es = environment.getElasticSearch();
-		documentDatabase = environment.getDocumentDatabase();
-		docs = new ArrayList<JSONDocumentObject>();
-		ocean = new OceanThread(environment);
+		docs = new ArrayList<JSONObject>();
 		isRunning = true;
 		worker = new Worker();
 		worker.start();	
 	}
 
-	public void addDoc(JSONDocumentObject doc) {
+	public void addDoc(JSONObject doc) {
 		synchronized(docs) {
 			docs.add(doc);
 			docs.notify();
@@ -60,7 +51,7 @@ public class DocumentThread {
 	class Worker extends Thread {
 		
 		public void run() {
-			JSONDocumentObject doc = null;
+			JSONObject doc = null;
 			while (isRunning) {
 				synchronized(docs) {
 					if (docs.isEmpty()) {
@@ -80,9 +71,9 @@ public class DocumentThread {
 		}
 		
 		
-		void processDoc(JSONDocumentObject doc) {
+		void processDoc(JSONObject doc) {
 			environment.logDebug("DocThread\n"+doc);
-			IDocument d = new ConcordanceDocument(environment, doc);
+/*			IDocument d = new ConcordanceDocument(environment, doc);
 			String docId = d.getId();
 			String pmid = d.getPMID();
 			String pmcid = d.getPMCID();
@@ -91,7 +82,7 @@ public class DocumentThread {
 			String label = labels.get(0);
 			IResult r  = documentDatabase.put(docId, pmid, pmcid, url, label, d.getData());
 			es.addDoc(d);
-			ocean.addDoc(d);
+			ocean.addDoc(d); */
 			environment.logDebug("DocThread+ "+r.getErrorString());
 		}
 	}

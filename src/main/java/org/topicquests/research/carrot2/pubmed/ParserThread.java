@@ -9,6 +9,8 @@ import java.util.*;
 import org.topicquests.research.carrot2.Environment;
 import org.topicquests.support.api.IResult;
 
+import net.minidev.json.JSONObject;
+
 /**
  * @author jackpark
  *
@@ -88,9 +90,10 @@ public class ParserThread {
 			environment.logDebug("PT.process "+parser);
 			hasBeenRunning = true;
 			IResult r = parser.parseXML(xml);
-			JSONDocumentObject j = (JSONDocumentObject)r.getResultObject();
+			JSONObject j = (JSONObject)r.getResultObject();
+			String pmid = j.getAsString("pmid");
 			environment.logDebug("PT+");
-			environment.getAccountant().haveSeen(j.getPMID());
+			environment.getAccountant().haveSeen(pmid);
 			docThread.addDoc(j);
 		}
 	}
