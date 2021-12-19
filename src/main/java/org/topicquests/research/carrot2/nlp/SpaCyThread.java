@@ -7,6 +7,7 @@ package org.topicquests.research.carrot2.nlp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 
 import org.topicquests.os.asr.driver.sp.SpacyDriverEnvironment;
 import org.topicquests.research.carrot2.Environment;
@@ -39,18 +40,29 @@ public class SpaCyThread {
 		environment.logDebug("SpaCyThread.boot");
 	}
 
-	public void addDoc(String docId, String paragraph) {
+	/**
+	 * Abstracts of a given {@code pubmedDoc} are accumulated in a {@code List}
+	 * @param pubmedDoc
+	 */
+	public void addDoc(JSONObject pubmedDoc) { //(String docId, String paragraph) {
 		if (worker == null) {
 			worker = new Worker();
 			worker.start();
 		}
-		JSONObject d = new JSONObject();
-		d.put("id", docId);
-		d.put("text", paragraph);
+		String docId = pubmedDoc.getAsString("pmid");
+		List<String> abstracts = (List<String>)pubmedDoc.get("abstract");
+		StringBuilder buf = new StringBuilder();
+		if (abstracts != null && !abstracts.isEmpty()) {
+			Iterator<String> itr = abstracts.iterator();
+			while (itr.hasNext())
+				buf.append(itr.next()+"/n");
+		}
+		pubmedDoc.put("id", docId);
+		pubmedDoc.put("text", buf.toString());
 
 		synchronized(paragraphs) {
 			environment.logDebug("SpaCyThread.add "+docId+" "+paragraphs.size());
-			paragraphs.add(d);
+			paragraphs.add(pubmedDoc);
 			paragraphs.notify();
 		}
 	}

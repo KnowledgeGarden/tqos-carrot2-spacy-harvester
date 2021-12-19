@@ -3,6 +3,9 @@ TODO
 	started Modify DocumentThread to gather JSON from spaCy then persist as gzip
 	did Modify ParserThread for new results from pullparser
 	Rewrite VagabondThread to feed Carrot2
-	Add spaCy processing to DocumentThread
+	did Add SpaCyThread processing to DocumentThread
 	did In ParserThread, add raw XML abstract to the JSONObject which then gets passed
 		to DocumentThread
+	In theory, SpaCyThread is close to right.
+	SpaCyThread passes result to FileManager which persists clusters of 100 docs in gzip
+		TODO drop that back to a dozen docs

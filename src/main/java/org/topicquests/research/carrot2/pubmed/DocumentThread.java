@@ -28,6 +28,23 @@ import net.minidev.json.JSONObject;
  * From each SpaCy pass, we get parse "results".
  * We need to accumulate all of those into a giant JSONObject which
  * we will then persist in a gzip file.
+ * <em>FailSafe</em>
+ * We need to track all processed objects.
+ * If the system fails for any reason, it should be able to start again where it 
+ * left off without losing any data.
+ * The work flow is:
+ * <ol><li>Read a query from a text file</li>
+ * <li>Send to Carrot2 and wait for result --> XML string</li>
+ * <li>XML string sent (not saved) to ParserThread queue</li>
+ * <li> Note the opportunity to lose all those in the queue</li>
+ * <li>XML string sent to PullParser --> JSONObject</li>
+ * <li>JSONObject is the text to be sent to SpaCy, one sentence at a time</li>
+ * <li>SpaCy takes time - its queue handles the lags</li>
+ * <li>  More opportunity to lose queued objects</li>
+ * <li>When all sentences in a given PMID are parsed by SpaCy, the final
+ *   JSONObject which accumulates everything is then stored as a gzip file</li>
+ * <li>At that time, the PMID is marked finished, but the query remains open until
+ *  all PMIDs associated with it are completed</li></ol>
  */
 public class DocumentThread {
 	private Environment environment;
@@ -94,7 +111,7 @@ public class DocumentThread {
 		 */
 		void processDoc(JSONObject doc) {
 			environment.logDebug("DocThread\n"+doc);
-
+			spacy.addDoc(doc);
 		}
 	}
 }
