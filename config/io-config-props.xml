@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<!-- 
+		tqos-asr-dictionary-agent properties
+	-->
+	
+<properties>
+	<!-- this agent commmunicates with the Statistics Server -->
+	<parameter name="StatServerURl" value="localhost" /> <!--  coordinate with StatServer -->
+	<parameter name="StatServerClientId" value = "changeme" /> <!-- coordinate with StatServer -->
+	<parameter name="StatServerPort" value="6900" /> <!-- coordinate with StatServer -->
+
+	<!-- this agent commmunicates with the Dictionary Server -->
+	<parameter name="DictServerURl" value="localhost" /> <!--  coordinate with Dictionary -->
+	<parameter name="DictServerPort" value="7878" /> <!-- coordinate with Dictionary Server -->
+	<parameter name="DictServerClientId" value = "changeme" /> <!-- coordinate with Dictionary Server -->
+
+	<!-- used in Stopper and StopperListener -->
+	<parameter name="StopperPort" value="8999" /> 				<!-- ??? CHANGEME -->
+</properties>	
+
+	

@@ -1,0 +1,1 @@
+java -Xms1024M -Xmx8196m -cp ./target/tqos-carrot2-spacy-harvester-0.1.0-SNAPSHOT-jar-with-dependencies.jar org.topicquests.research.carrot2.nlp.postprocess.PostProcessor

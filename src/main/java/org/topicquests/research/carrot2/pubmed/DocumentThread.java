@@ -45,6 +45,7 @@ import net.minidev.json.JSONObject;
  *   JSONObject which accumulates everything is then stored as a gzip file</li>
  * <li>At that time, the PMID is marked finished, but the query remains open until
  *  all PMIDs associated with it are completed</li></ol>
+ *  @deprecated
  */
 public class DocumentThread {
 	private Environment environment;
@@ -70,6 +71,7 @@ public class DocumentThread {
 	 * @param doc
 	 */
 	public void addDoc(JSONObject doc) {
+		environment.logDebug("DocThread.add "+doc);
 		synchronized(docs) {
 			docs.add(doc);
 			docs.notify();
@@ -111,7 +113,7 @@ public class DocumentThread {
 		 */
 		void processDoc(JSONObject doc) {
 			environment.logDebug("DocThread\n"+doc);
-			spacy.addDoc(doc);
+		//	spacy.addDoc(doc);
 		}
 	}
 }

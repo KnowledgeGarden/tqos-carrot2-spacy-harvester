@@ -11,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
+
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONStyle;
 /**
  * @author jackpark
  *
@@ -62,6 +65,37 @@ public class FileManager {
 	/** Not thread safe artifacts */
 	private List<String> abstracts = new ArrayList<String>();
 	private String currentPMID = null;
+	
+	public void quickSaveSpaCy(JSONObject data) {
+		Iterator<String>itr = data.keySet().iterator();
+		JSONObject jo;
+		String pmid, filePath;
+		File f;
+		while (itr.hasNext()) {
+			pmid = itr.next();
+			jo = (JSONObject)data.get(pmid);
+		
+			try {
+				filePath = this.nlpPath+pmid+".json.gz";
+		    	f = new File(filePath);
+		    	FileOutputStream fos = new FileOutputStream(f);
+	    		environment.logDebug("FM.ps-3");
+		    	GZIPOutputStream gos = new GZIPOutputStream(fos);
+	    		environment.logDebug("FM.ps-4");
+		    	PrintWriter out = new PrintWriter(gos);
+		    	out.print(jo.toJSONString(JSONStyle.NO_COMPRESS));
+		    	out.flush();
+		    	out.close();
+				
+			} catch (Exception e) {
+	    		environment.logDebug("FM.qs error");
+	    		environment.logError(e.getMessage(), e);
+	    		System.out.println("SHEUTTT!");
+	    		e.printStackTrace();
+				
+			} 
+		}
+	}
 	/**
 	 * Persist SpaCy results in groups of 100 in gzip files
 	 * @param pmid if {@code null}, just save what's in the queue

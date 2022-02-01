@@ -14,6 +14,7 @@ import org.topicquests.research.carrot2.Environment;
 import org.topicquests.research.carrot2.FileManager;
 import org.topicquests.support.api.IResult;
 
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 /**
@@ -24,10 +25,10 @@ public class SpaCyThread {
 	private Environment environment;
 	private FileManager fileManager;
 	private SpacyDriverEnvironment spaCy;
-	private List<JSONObject> paragraphs;
+	private List<List<JSONObject>> paragraphs; //todo rename to pubmedDocs
 	private boolean isRunning = true;
 	private Worker worker = null;
-	private boolean wasRunning = false;
+	//private boolean wasRunning = false;
 
 	/**
 	 * 
@@ -36,35 +37,31 @@ public class SpaCyThread {
 		environment = env;
 		spaCy = new SpacyDriverEnvironment();
 		fileManager = environment.getFileManager();
-		paragraphs = new ArrayList<JSONObject>();
+		paragraphs = new ArrayList<List<JSONObject>>();
 		environment.logDebug("SpaCyThread.boot");
+		worker = new Worker();
+		worker.start();
+		isRunning = true;
 	}
+
+	//////////////////////////////////////
+	// In theory, this needs to receive a block of docs, say 6 at a time.
+	// So, we are talking about a List<JSONObject> coming in, and
+	// sequestering a List<List<JSONObject>> for thread handling
+	//////////////////////////////////////
 
 	/**
 	 * Abstracts of a given {@code pubmedDoc} are accumulated in a {@code List}
 	 * @param pubmedDoc
 	 */
-	public void addDoc(JSONObject pubmedDoc) { //(String docId, String paragraph) {
-		if (worker == null) {
-			worker = new Worker();
-			worker.start();
-		}
-		String docId = pubmedDoc.getAsString("pmid");
-		List<String> abstracts = (List<String>)pubmedDoc.get("abstract");
-		StringBuilder buf = new StringBuilder();
-		if (abstracts != null && !abstracts.isEmpty()) {
-			Iterator<String> itr = abstracts.iterator();
-			while (itr.hasNext())
-				buf.append(itr.next()+"/n");
-		}
-		pubmedDoc.put("id", docId);
-		pubmedDoc.put("text", buf.toString());
-
-		synchronized(paragraphs) {
-			environment.logDebug("SpaCyThread.add "+docId+" "+paragraphs.size());
-			paragraphs.add(pubmedDoc);
-			paragraphs.notify();
-		}
+	public void addDoc(List<JSONObject> pubmedDoc) { //(String docId, String paragraph) {
+		environment.logDebug("ADDING "+pubmedDoc.size());
+			synchronized(paragraphs) {
+				environment.logDebug("SpaCyThread.add "+" "+paragraphs.size());
+				paragraphs.add(pubmedDoc);
+				paragraphs.notify();
+			}
+		
 	}
 	
 	public void shutDown() {
@@ -78,53 +75,100 @@ public class SpaCyThread {
 	class Worker extends Thread {
 		
 		public void run() {
-			environment.logDebug("ParserThread.starting");
-			JSONObject doc = null;
+			environment.logDebug("SpaCyThread.starting");
+			List<JSONObject> doc = null;
 			while (isRunning) {
 				synchronized(paragraphs) {
 					environment.logDebug("SpaCyThread-XX "+paragraphs.size());
 					if (paragraphs.isEmpty()) {
-						if (wasRunning) {
-							wasRunning = false;
-							fileManager.persistSpaCy(null, null);
-						}
 						try {
 							paragraphs.wait();
 						} catch (Exception e) {}
 						
 					} else {
 						doc = paragraphs.remove(0);
+						environment.logDebug("SpaCyThread.pong "+doc);
 					}
 				}
 				if (isRunning && doc != null) {
-					wasRunning = true;
 					processDoc(doc);
 					doc = null;
 					environment.logDebug("SpaCyThread-R "+isRunning);
 				}
+				environment.logDebug("SpaCyThread.ping");
+
 			}
+			environment.logDebug("SpaCyThread.ending");
 		}
 		
-		void processDoc(JSONObject paragraph) {
-			int ps = 0;
+		/**
+		 * We get a block of abstracts, e.g. 6 at a time.
+		 * @param pubmedDoc [{id, paragraphs }, ...]
+		 */
+		void processDoc(List<JSONObject> pubmedDoc) {
+			environment.logDebug("SpaCyThread- "+pubmedDoc);
+			// From one pass per model on each pubmedDoc
+			// we populate collection. The collection can then be persisted
+			// either separately or as a single gz file
+			// for debugging, best to take it apart
+			JSONObject collection = new JSONObject();
+			//int ps = 0;
+			
+			List<String> models = this.spaCyModels();
+			Iterator<String> itr = models.iterator();
+			Iterator<JSONObject> itjo;
+			JSONObject jo, hit, jx;
+			JSONArray ja;
+			String model, paragraph, text, docId;
+			IResult r;
 			long startTime = System.currentTimeMillis();
-			synchronized(paragraphs) {
-				ps = paragraphs.size();
+			while (itr.hasNext()) {
+				//For each model
+				model = itr.next();
+				itjo = pubmedDoc.iterator();
+				while (itjo.hasNext()) {
+					//For each abstract
+					jo = itjo.next();
+					paragraph = jo.getAsString("text");
+					text = cleanParagraph(paragraph);
+					docId = jo.getAsString("id");
+					//put it in collection if not there yet
+					jx = (JSONObject)collection.get(docId);
+					if (jx == null)
+						collection.put(docId, jo); 
+					environment.logDebug("SpaCyThread-AAA "+docId+"/n"+text);
+					r = spaCy.processParagraph(text, model);
+					hit = (JSONObject)r.getResultObject();
+					environment.logDebug("SpaCyThread-AAA "+docId+"/n"+text);
+					// we got a hit for a PMID and MODEL
+					// jo is the core doc
+					jx = (JSONObject)collection.get(docId);
+					//add this new hit
+					ja = (JSONArray)jx.get("results");
+					if (ja == null) ja = new JSONArray();
+					ja.add(hit);  // new result for existing collection
+					jx.put("results", ja);
+						// in theory, collection is now up to date
+				}
 			}
-			environment.logDebug("SpaCyThread-x "+ps);
-			String docId = paragraph.getAsString("id");
-			System.out.println("STp "+docId+" "+ps);
-			String text = paragraph.getAsString("text");
-			text = cleanParagraph(text);
-			IResult r = spaCy.processSentence(text);
-			JSONObject jo = (JSONObject)r.getResultObject();
-			jo.put("docId", docId);
+			
+
+			/*IResult r = 
+			//we get back a list of json objects, one for each model for the given  paragraph
+			List<JSONObject> jo = (List<JSONObject>)r.getResultObject();
+			environment.logDebug("SpaCyThread-BBB "+jo);
+
+			pubmedDoc.put("abstract", text);
+			pubmedDoc.put("results", jo);*/
+
 			long delta = System.currentTimeMillis() - startTime;
-			environment.nlpTiming(docId, delta); // instrument
-			System.out.println("STp+ "+jo.size());
-			environment.logDebug("SpaCyThread+ "+jo.size());
-			fileManager.persistSpaCy(docId, jo.toJSONString());
+			//environment.nlpTiming(docId, delta); // instrument
+			//System.out.println("STp+ "+jo.size());
+			environment.logDebug("SpaCyThread+ "+delta);
+			fileManager.quickSaveSpaCy(collection);
+			//persistSpaCy(docId, jo.toJSONString());
 		}
+		
 		
 		String cleanParagraph(String paragraph) {
 			StringBuilder buf = new StringBuilder();
@@ -155,5 +199,31 @@ public class SpaCyThread {
 			}
 			return buf.toString().trim();
 		}
+		
+		/**
+		 * List of known models available at the server.<br/>
+		 * We are tasked to send blocks of abstracts, one model at a time
+		 * @return
+		 */
+		List<String> spaCyModels() {
+			List<String> models = new ArrayList<String>();
+			models.add("en_ner_jnlpba_md");
+			models.add("en_ner_bc5cdr_md");
+			models.add("en_ner_bionlp13cg_md"); //
+			models.add("en_ner_craft_md"); //
+			models.add("en_core_web_lg");  //
+			models.add("en_core_sci_lg"); //
+			models.add("en_core_web_trf"); //
+			models.add("en_core_sci_scibert"); //
+			models.add("stanza;craft;anatem"); //
+			models.add("stanza;craft;bc5cdr"); //
+			models.add("stanza;craft;jnlbpa"); //
+			models.add("stanza;craft;bionlp13cg"); //
+			models.add("stanza;craft;ncbi_disease"); //
+			return models;
+		}
 	}
+	
+
+	
 }

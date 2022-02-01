@@ -7,6 +7,7 @@ package org.topicquests.research.carrot2.pubmed;
 
 import java.util.*;
 import org.topicquests.research.carrot2.Environment;
+import org.topicquests.research.carrot2.nlp.SpaCyThread;
 import org.topicquests.support.api.IResult;
 
 import net.minidev.json.JSONObject;
@@ -17,12 +18,16 @@ import net.minidev.json.JSONObject;
  */
 public class ParserThread {
 	private Environment environment;
-	private DocumentThread docThread;
+	//private DocumentThread docThread;
+	private SpaCyThread spacy;
+
 	private PubMedReportPullParser parser;
 	private List<String> docs;
+	private List<JSONObject> docBlock;
 	private boolean isRunning = true;
 	private boolean hasBeenRunning = false;
 	private Worker worker;
+	private final int BLOCK_SIZE = 2;
 
 	/**
 	 * 
@@ -30,14 +35,25 @@ public class ParserThread {
 	public ParserThread(Environment env) {
 		environment = env;
 		parser = new PubMedReportPullParser(environment);
-		docThread = new DocumentThread(environment);
+		//docThread = new DocumentThread(environment);
+		spacy = new SpaCyThread(environment);
+
 		docs = new ArrayList<String>();
+		docBlock = new ArrayList<JSONObject>(BLOCK_SIZE);
 		isRunning = true;
 		worker = new Worker();
 		worker.start();
 		environment.logDebug("ParserThread");
 	}
 	
+	/**
+	 * Called by way of {@code Environment} when all files have
+	 * been loaded, which means that if we don't have a full block,
+	 * send it anyway.
+	 */
+	public void filesLoaded() {
+		
+	}
 	/**
 	 * From Carrot2 search by way of {@code Environment}
 	 * @param xml
@@ -55,7 +71,8 @@ public class ParserThread {
 			isRunning = false;
 			docs.notify();
 		}
-		docThread.shutDown();
+		//docThread.shutDown();
+		spacy.shutDown();
 	}
 	class Worker extends Thread {
 		
@@ -98,9 +115,33 @@ public class ParserThread {
 			//add raw XML to j
 			j.put("raw", xml);
 			String pmid = j.getAsString("pmid");
-			environment.logDebug("PT+");
 			environment.getAccountant().haveSeen(pmid);
-			docThread.addDoc(j);
+			environment.logDebug("PT+");
+			processBlock(j);
+			environment.logDebug("PT++");
+		}
+		
+		void processBlock(JSONObject pubmedDoc) {
+			String docId = pubmedDoc.getAsString("pmid");
+			environment.logDebug("SpaCyThread.adding "+docId);
+			List<String> abstracts = (List<String>)pubmedDoc.get("abstract");
+			StringBuilder buf = new StringBuilder();
+			if (abstracts != null && !abstracts.isEmpty()) {
+				Iterator<String> itr = abstracts.iterator();
+				while (itr.hasNext())
+					buf.append(itr.next()+"/n");
+			}
+			pubmedDoc.put("id", docId);
+			pubmedDoc.put("text", buf.toString());
+
+			docBlock.add(pubmedDoc);
+			if (docBlock.size() >= BLOCK_SIZE) {
+				sendBlock();
+				docBlock = new ArrayList<JSONObject>();
+			}
+		}
+		void sendBlock() {
+			spacy.addDoc(docBlock);
 		}
 	}
 }

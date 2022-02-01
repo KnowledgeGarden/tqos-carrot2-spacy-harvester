@@ -1,0 +1,21 @@
+{
+	"properties": {
+		"id": {
+			"index": "true",
+			"type": "keyword",
+			"store": true
+		},
+		"label": {
+			"index": "true",
+			"type": "text",
+			"analyzer": "english",
+			"store": false
+		},
+		"abstract": {
+			"index": "true",
+			"type": "text",
+			"analyzer": "english",
+			"store": false
+		}
+	}
+}

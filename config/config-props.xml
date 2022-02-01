@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+
+<properties>
+
+	<parameter name="MAX_COUNT" value="150" />
+	<parameter name="COUNT" value="50" />
+
+	<parameter name="StatServerURl" value="localhost" /> <!--  coordinate with StatServer -->
+	<parameter name="StatServerPort" value="6900" /> <!-- coordinate with StatServer -->
+	<parameter name="StatServerClientId" value = "changeme" /> <!-- coordinate with StatServer -->
+
+	<parameter name="ClusterDataPath" value = "data/output/" />
+	<parameter name="PubMedAbstractPath" value="data/pubmed/" />
+	<parameter name="NlpPath" value="data/nlp/" />
+	<parameter name="PostPath" value="data/postprocessed/" />
+	<parameter name="StatsPath" value="data/stats/" />
+
+
+</properties>
+

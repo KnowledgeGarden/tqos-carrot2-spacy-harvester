@@ -90,6 +90,10 @@ public class Environment extends RootEnvironment {
 		fileManager.persistAbstract(pmid, xml);
 	}
 	
+	public ParserThread getParserThread() {
+		return parserThread;
+	}
+	
 	/**
 	 * Callback from ParserThread when its
 	 * queue runs empty
@@ -97,6 +101,12 @@ public class Environment extends RootEnvironment {
 	public void queueEmpty() {
 		accountant.bump();
 		//fileManager.bump();
+	}
+	/**
+	 * Callback from {@code AbstractFileLoader}
+	 */
+	public void filesLoaded() {
+		parserThread.filesLoaded();
 	}
 	
 	/////////////////////
