@@ -13,7 +13,7 @@ import net.minidev.json.JSONObject;
  */
 public class Analyzer {
 	private PostProcessor environment;
-	private static final String
+	public static final String
 		SUBSTANCES 	= "substances",
 		TAGS		= "tags",
 		RAW			= "raw",
@@ -95,7 +95,9 @@ public class Analyzer {
 	}
 	
 	void processModel(JSONObject modelObject, JSONObject doc, JSONObject result) {
+		String id = doc.getAsString(ID);
 		String myModel = modelObject.getAsString(MODEL);
+		environment.logDebug("Processing "+id+" "+myModel);
 		//we ignore the text field since it is the abstract
 		//The abstract's parse for this model
 		JSONObject abstractResults = (JSONObject)modelObject.get(RESULTS);
@@ -103,7 +105,11 @@ public class Analyzer {
 		JSONObject bulkConcepts = (JSONObject)abstractResults.get(CONCEPTS);
 		//All the sentences for this abstract
 		JSONArray sentences = (JSONArray)abstractResults.get(SENTENCES);
-		processSentences(myModel, sentences, result);
+		if (sentences == null) {
+			environment.logError("MISSING\n"+doc, null);
+			//Apparently, some abstracts have no sencences
+		} else
+			processSentences(myModel, sentences, result);
 		
 	}
 	
@@ -133,6 +139,9 @@ public class Analyzer {
 		jo.put(NODES, sentence.get(NODES));
 		mySentences.add(jo);
 		// Then, the trees
-		// TODO
+		jo = new JSONObject();
+		jo.put(MODEL, myModel);
+		jo.put(TREES, sentence.get(TREE));
+		mySentences.add(jo);
 	}
 }

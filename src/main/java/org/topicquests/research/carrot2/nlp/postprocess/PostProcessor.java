@@ -19,6 +19,7 @@ public class PostProcessor extends RootEnvironment {
 	public PostProcessor() {
 		super("config-props.xml", "logger.properties");
 		filer = new PostFileHandler(this);
+		System.out.println("Booted "+filer);
 		//begin processing
 		filer.beginProcessing();
 	}
